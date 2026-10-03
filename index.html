@@ -769,7 +769,10 @@
         dezInput.max = g.max;
         dezInput.value = g.def;
       }
-      gameSel.addEventListener("change", syncDezenas);
+      gameSel.addEventListener("change", () => {
+        syncDezenas();
+        generateGames(false);
+      });
       function applyTheme(theme) {
         if (theme === "auto") {
           document.documentElement.removeAttribute("data-theme");
@@ -907,7 +910,7 @@
         }
         const historyInput = document.getElementById("historico");
         const line = formatNumbers(result);
-        const existing = parseHistorico().some(
+        const existing = getHistoryForGame(cfg).validDraws.some(
           (draw) =>
             gameKey([...draw].sort((a, b) => a - b)) === gameKey(result),
         );
@@ -924,7 +927,7 @@
         generateGames(false);
       });
 
-      function parseHistorico() {
+      function parseHistoryLines() {
         const raw = document.getElementById("historico").value.trim();
         if (!raw) return [];
         return raw
@@ -937,6 +940,20 @@
             return nums;
           })
           .filter((arr) => arr.length > 0);
+      }
+
+      function getHistoryForGame(cfg) {
+        const lines = parseHistoryLines();
+        const validDraws = lines.filter(
+          (draw) =>
+            draw.length === cfg.def &&
+            new Set(draw).size === draw.length &&
+            draw.every((number) => number >= 1 && number <= cfg.range),
+        );
+        return {
+          validDraws,
+          ignoredCount: lines.length - validDraws.length,
+        };
       }
 
       function computeFreq(historico, range) {
@@ -1068,7 +1085,8 @@
             parseInt(document.getElementById("qtdJogos").value, 10) || 5,
           ),
         );
-        const historicoCompleto = parseHistorico();
+        const historyInfo = getHistoryForGame(cfg);
+        const historicoCompleto = historyInfo.validDraws;
         const strategy = document.getElementById("strategy").value;
         const historico =
           strategy === "frequency"
@@ -1085,10 +1103,12 @@
         const status = document.getElementById("status");
         status.textContent =
           historico.length > 0
-            ? `${historico.length} de ${historicoCompleto.length} sorteio(s) considerados na análise.`
-            : document.getElementById("useFreq").checked
-              ? "Nenhum histórico colado — gerando de forma totalmente aleatória."
-              : "";
+            ? `${historico.length} de ${historicoCompleto.length} sorteio(s) válido(s) da ${cfg.label.split(" (")[0]} considerado(s) na análise.${historyInfo.ignoredCount ? ` ${historyInfo.ignoredCount} linha(s) incompatível(is) ignorada(s).` : ""}`
+            : historyInfo.ignoredCount
+              ? `${historyInfo.ignoredCount} linha(s) incompatível(is) com a ${cfg.label.split(" (")[0]} foi(ram) ignorada(s).`
+              : document.getElementById("useFreq").checked
+                ? "Nenhum histórico colado — gerando de forma totalmente aleatória."
+                : "";
 
         const freq = computeFreq(historico, cfg.range);
         const freqBox = document.getElementById("freqBox");
