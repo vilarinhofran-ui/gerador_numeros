@@ -109,6 +109,27 @@
         padding: 16px;
         margin-bottom: 14px;
       }
+      .theme-switcher {
+        display: flex;
+        gap: 8px;
+      }
+      .theme-icon {
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        padding: 0;
+        background: var(--panel2);
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 1.25rem;
+        line-height: 1;
+      }
+      .theme-icon[aria-pressed="true"] {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #04140a;
+      }
       label {
         display: block;
         font-size: 0.8rem;
@@ -429,6 +450,15 @@
         margin: 8px 0 0;
         min-height: 18px;
       }
+      .suggestion-copy {
+        color: var(--muted);
+        font-size: 0.8rem;
+        line-height: 1.45;
+        margin: 8px 0 0;
+      }
+      .suggestion-balls {
+        margin-top: 10px;
+      }
     </style>
   </head>
   <body>
@@ -449,12 +479,29 @@
     </p>
 
     <div class="card">
-      <label for="theme">Aparência</label>
-      <select id="theme">
-        <option value="auto">Automática (sistema)</option>
-        <option value="light">Tema claro</option>
-        <option value="dark">Tema escuro</option>
-      </select>
+      <label>Aparência</label>
+      <div class="theme-switcher" role="group" aria-label="Aparência">
+        <button
+          class="theme-icon"
+          type="button"
+          data-theme-choice="light"
+          aria-label="Ativar tema claro"
+          aria-pressed="false"
+          title="Tema claro"
+        >
+          ☀
+        </button>
+        <button
+          class="theme-icon"
+          type="button"
+          data-theme-choice="dark"
+          aria-label="Ativar tema escuro"
+          aria-pressed="false"
+          title="Tema escuro"
+        >
+          ☾
+        </button>
+      </div>
     </div>
 
     <div class="card">
@@ -568,6 +615,13 @@
     <div id="freqBox" class="card" style="display: none">
       <strong style="font-size: 0.85rem">Frequência no histórico colado</strong>
       <div class="freq-list" id="freqList"></div>
+      <div id="suggestionBox" style="display: none">
+        <strong style="font-size: 0.85rem; display: block; margin-top: 16px"
+          >Sugestão estatística</strong
+        >
+        <p id="suggestionCopy" class="suggestion-copy"></p>
+        <div id="suggestionBalls" class="balls suggestion-balls"></div>
+      </div>
     </div>
 
     <div id="copyAllBar" class="batch-actions" style="display: none">
@@ -688,7 +742,7 @@
 
       const gameSel = document.getElementById("game");
       const dezInput = document.getElementById("dezenas");
-      const themeInput = document.getElementById("theme");
+      const themeButtons = document.querySelectorAll("[data-theme-choice]");
       const settingsKey = "jogos-loteria-config";
       const pastedResultsKey = "jogos-loteria-resultados";
       const generatedGamesKey = "jogos-loteria-historico-jogos";
@@ -722,8 +776,20 @@
         } else {
           document.documentElement.dataset.theme = theme;
         }
+        const effectiveTheme =
+          theme === "auto"
+            ? window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : theme;
         document.querySelector('meta[name="theme-color"]').content =
-          theme === "light" ? "#f4f5f7" : "#0f1115";
+          effectiveTheme === "light" ? "#f4f5f7" : "#0f1115";
+        themeButtons.forEach((button) => {
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.themeChoice === effectiveTheme),
+          );
+        });
       }
       function saveSettings() {
         try {
@@ -731,7 +797,7 @@
             settingsKey,
             JSON.stringify({
               game: gameSel.value,
-              theme: themeInput.value,
+              theme: document.documentElement.dataset.theme || "auto",
               qtd: document.getElementById("qtdJogos").value,
               strategy: document.getElementById("strategy").value,
               historyWindow: document.getElementById("historyWindow").value,
@@ -749,10 +815,11 @@
           const settings = JSON.parse(localStorage.getItem(settingsKey));
           if (!settings || !GAMES[settings.game]) return;
           gameSel.value = settings.game;
-          themeInput.value = ["auto", "light", "dark"].includes(settings.theme)
-            ? settings.theme
-            : "auto";
-          applyTheme(themeInput.value);
+          applyTheme(
+            ["auto", "light", "dark"].includes(settings.theme)
+              ? settings.theme
+              : "auto",
+          );
           document.getElementById("qtdJogos").value = settings.qtd || 5;
           document.getElementById("strategy").value =
             settings.strategy || "balanced";
@@ -786,11 +853,10 @@
       }
       loadPastedResults();
       loadSettings();
-      applyTheme(themeInput.value);
+      applyTheme(document.documentElement.dataset.theme || "auto");
       syncDezenas();
       [
         "game",
-        "theme",
         "qtdJogos",
         "strategy",
         "historyWindow",
@@ -800,7 +866,12 @@
       ].forEach((id) => {
         document.getElementById(id).addEventListener("change", saveSettings);
       });
-      themeInput.addEventListener("change", () => applyTheme(themeInput.value));
+      themeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          applyTheme(button.dataset.themeChoice);
+          saveSettings();
+        });
+      });
       document
         .getElementById("historico")
         .addEventListener("input", savePastedResults);
@@ -969,6 +1040,20 @@
         return Math.round(criteriaScore + historyScore + (balance ? 0 : 10));
       }
 
+      function statisticalSuggestion(range, k, freq, balance) {
+        let bestGame = [];
+        let bestScore = -1;
+        for (let attempt = 0; attempt < 80; attempt++) {
+          const game = generateGame(range, k, freq, true, balance);
+          const score = relativeScore(game, range, freq, balance);
+          if (score > bestScore) {
+            bestGame = game;
+            bestScore = score;
+          }
+        }
+        return bestGame;
+      }
+
       function generateGames(saveToHistory = true) {
         const gameType = gameSel.value;
         const cfg = GAMES[gameType];
@@ -1019,8 +1104,19 @@
                 `<span class="freq-item">${n.padStart(2, "0")}: <b>${c}x</b></span>`,
             )
             .join("");
+          const suggestion = statisticalSuggestion(cfg.range, k, freq, balance);
+          document.getElementById("suggestionBox").style.display = "block";
+          document.getElementById("suggestionCopy").textContent =
+            "Baseada na frequência deste histórico e no equilíbrio escolhido. Não prevê o próximo sorteio nem aumenta a chance matemática de acerto.";
+          document.getElementById("suggestionBalls").innerHTML = suggestion
+            .map(
+              (number) =>
+                `<div class="ball">${String(number).padStart(2, "0")}</div>`,
+            )
+            .join("");
         } else {
           freqBox.style.display = "none";
+          document.getElementById("suggestionBox").style.display = "none";
         }
 
         const seen = new Set();
