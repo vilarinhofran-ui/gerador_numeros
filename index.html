@@ -1,0 +1,1421 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <title>Gerador de Jogos - Loterias Caixa</title>
+    <meta
+      name="description"
+      content="Gerador de jogos para loterias da Caixa com analise de frequencia historica."
+    />
+    <meta name="theme-color" content="#00a651" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icons/favicon-32.png" type="image/png" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Jogos Loteria" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <style>
+      :root {
+        --bg: #0f1115;
+        --panel: #171a21;
+        --panel2: #1e222b;
+        --border: #2a2f3a;
+        --text: #eef0f4;
+        --muted: #98a1b3;
+        --accent: #00a651;
+        --accent2: #ffb300;
+        --danger: #ff5c5c;
+        --radius: 14px;
+      }
+      @media (prefers-color-scheme: light) {
+        :root:not([data-theme="dark"]) {
+          --bg: #f4f5f7;
+          --panel: #ffffff;
+          --panel2: #f0f1f4;
+          --border: #e1e3e8;
+          --text: #1a1d24;
+          --muted: #5b6272;
+          --accent: #00863f;
+          --accent2: #c47f00;
+        }
+      }
+      :root[data-theme="light"] {
+        --bg: #f4f5f7;
+        --panel: #ffffff;
+        --panel2: #f0f1f4;
+        --border: #e1e3e8;
+        --text: #1a1d24;
+        --muted: #5b6272;
+        --accent: #00863f;
+        --accent2: #c47f00;
+      }
+      :root[data-theme="dark"] {
+        --bg: #0f1115;
+        --panel: #171a21;
+        --panel2: #1e222b;
+        --border: #2a2f3a;
+        --text: #eef0f4;
+        --muted: #98a1b3;
+        --accent: #00a651;
+        --accent2: #ffb300;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        padding: calc(16px + env(safe-area-inset-top))
+          calc(16px + env(safe-area-inset-right))
+          calc(24px + env(safe-area-inset-bottom))
+          calc(16px + env(safe-area-inset-left));
+        max-width: 720px;
+        margin: 0 auto;
+        min-height: 100vh;
+        overscroll-behavior-y: contain;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 8px 0 2px;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-bottom: 16px;
+        line-height: 1.4;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+      label {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin: 10px 0 6px;
+      }
+      select,
+      textarea,
+      input[type="number"],
+      input[type="text"] {
+        width: 100%;
+        background: var(--panel2);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        font-family: inherit;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 80px;
+        line-height: 1.4;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .row > div {
+        flex: 1;
+        min-width: 120px;
+      }
+      .toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-top: 10px;
+        font-size: 0.9rem;
+      }
+      .switch {
+        position: relative;
+        width: 42px;
+        height: 24px;
+        flex-shrink: 0;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        inset: 0;
+        background: var(--border);
+        border-radius: 24px;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .slider:before {
+        content: "";
+        position: absolute;
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        top: 3px;
+        background: #fff;
+        border-radius: 50%;
+        transition: 0.2s;
+      }
+      input:checked + .slider {
+        background: var(--accent);
+      }
+      input:checked + .slider:before {
+        transform: translateX(18px);
+      }
+      button {
+        width: 100%;
+        padding: 13px;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 14px;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #04140a;
+      }
+      .btn-secondary {
+        background: var(--panel2);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      .game {
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .balls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .ball {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #04140a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.82rem;
+        flex-shrink: 0;
+      }
+      .ball.hot {
+        background: var(--accent2);
+      }
+      .meta {
+        font-size: 0.72rem;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      .copy-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 0.75rem;
+        padding: 6px 10px;
+        border-radius: 8px;
+        width: auto;
+        margin: 0;
+        flex-shrink: 0;
+      }
+      .warn {
+        background: rgba(255, 92, 92, 0.08);
+        border: 1px solid rgba(255, 92, 92, 0.3);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 0.8rem;
+        line-height: 1.5;
+        margin-top: 10px;
+      }
+      .warn b {
+        color: var(--danger);
+      }
+      .freq-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .freq-item {
+        font-size: 0.72rem;
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 3px 7px;
+        color: var(--muted);
+      }
+      .freq-item b {
+        color: var(--text);
+      }
+      #status {
+        font-size: 0.78rem;
+        color: var(--muted);
+        margin-top: 6px;
+        min-height: 16px;
+      }
+      #installBar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin-bottom: 14px;
+        font-size: 0.82rem;
+      }
+      #installBtn {
+        width: auto;
+        margin: 0;
+        padding: 8px 14px;
+        font-size: 0.82rem;
+        flex-shrink: 0;
+        background: var(--accent);
+        color: #04140a;
+        border-radius: 8px;
+      }
+      .batch-actions {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .batch-actions button {
+        margin: 0;
+      }
+      .batch-actions button:first-child {
+        flex: 1;
+      }
+      .batch-actions button:last-child {
+        width: auto;
+        padding: 10px 14px;
+      }
+      .score {
+        color: var(--accent2);
+        font-weight: 700;
+      }
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .section-header h2 {
+        font-size: 1rem;
+        margin: 0;
+      }
+      .small-btn {
+        width: auto;
+        margin: 0;
+        padding: 7px 10px;
+        font-size: 0.75rem;
+      }
+      .history-summary {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin: 12px 0;
+      }
+      .history-summary div {
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+      .history-summary b {
+        display: block;
+        color: var(--text);
+        font-size: 1rem;
+        margin-top: 2px;
+      }
+      .history-item {
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        margin-top: 10px;
+      }
+      .history-item-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: flex-start;
+      }
+      .history-item-head strong {
+        font-size: 0.86rem;
+      }
+      .history-item .balls {
+        margin: 10px 0;
+      }
+      .history-item .ball {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+      }
+      .history-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .history-actions select {
+        flex: 1;
+        padding: 7px 8px;
+        font-size: 0.76rem;
+      }
+      .empty-history {
+        color: var(--muted);
+        font-size: 0.84rem;
+        margin: 12px 0 0;
+      }
+      .result-update {
+        margin-top: 12px;
+      }
+      .result-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .result-actions button {
+        margin: 0;
+        flex: 1;
+        font-size: 0.85rem;
+        padding: 10px;
+      }
+      #updateStatus {
+        color: var(--muted);
+        font-size: 0.78rem;
+        line-height: 1.4;
+        margin: 8px 0 0;
+        min-height: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="installBar">
+      <span id="installMsg"
+        >📲 Instale este app na tela inicial para abrir como aplicativo.</span
+      >
+      <button id="installBtn" style="display: none">Instalar</button>
+    </div>
+
+    <h1>🎲 Gerador de Jogos — Loterias Caixa</h1>
+    <p class="sub">
+      Ferramenta de organização de jogos com base em frequência histórica
+      (números "quentes" e "frios").
+      <b>Isso não aumenta a chance real de acerto</b> — cada sorteio é
+      independente e todas as combinações têm a mesma probabilidade matemática.
+      Use apenas como apoio para montar seus jogos.
+    </p>
+
+    <div class="card">
+      <label for="theme">Aparência</label>
+      <select id="theme">
+        <option value="auto">Automática (sistema)</option>
+        <option value="light">Tema claro</option>
+        <option value="dark">Tema escuro</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <label for="game">Modalidade</label>
+      <select id="game"></select>
+
+      <div class="row">
+        <div>
+          <label for="dezenas">Dezenas por jogo</label>
+          <input type="number" id="dezenas" min="1" />
+        </div>
+        <div>
+          <label for="qtdJogos">Quantidade de jogos</label>
+          <input type="number" id="qtdJogos" value="5" min="1" max="20" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="strategy">Estratégia</label>
+          <select id="strategy">
+            <option value="balanced">Equilibrada</option>
+            <option value="frequency">Frequência</option>
+            <option value="recent">Recente</option>
+            <option value="diverse">Diversificada</option>
+          </select>
+        </div>
+        <div>
+          <label for="historyWindow">Janela do histórico</label>
+          <select id="historyWindow">
+            <option value="20">Últimos 20 sorteios</option>
+            <option value="50">Últimos 50 sorteios</option>
+            <option value="100" selected>Últimos 100 sorteios</option>
+            <option value="all">Histórico completo</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="historico"
+        >Cole aqui resultados anteriores (opcional) — um sorteio por linha,
+        números separados por espaço ou vírgula</label
+      >
+      <textarea
+        id="historico"
+        placeholder="Ex:
+04 08 15 23 34 41
+02 11 19 28 33 45
+..."
+      ></textarea>
+      <div id="status"></div>
+
+      <div class="result-update">
+        <label for="officialResult">Atualizar com resultado oficial</label>
+        <input
+          id="officialResult"
+          type="text"
+          inputmode="numeric"
+          placeholder="Cole somente as dezenas do último concurso: 01 02 07 18 33 35"
+        />
+        <div class="result-actions">
+          <button id="openCaixa" class="btn-secondary" type="button">
+            Consultar Caixa
+          </button>
+          <button id="updateResults" class="btn-secondary" type="button">
+            Atualizar histórico
+          </button>
+        </div>
+        <p id="updateStatus">
+          Fonte oficial: Loterias Caixa. A atualização é feita ao colar as
+          dezenas publicadas.
+        </p>
+      </div>
+
+      <div class="toggle">
+        <span
+          >Priorizar números "quentes" (mais frequentes no histórico
+          colado)</span
+        >
+        <label class="switch"
+          ><input type="checkbox" id="useFreq" checked /><span
+            class="slider"
+          ></span
+        ></label>
+      </div>
+      <div class="toggle">
+        <span>Balancear pares/ímpares e soma das dezenas</span>
+        <label class="switch"
+          ><input type="checkbox" id="balance" checked /><span
+            class="slider"
+          ></span
+        ></label>
+      </div>
+      <div class="toggle">
+        <span>Evitar jogos duplicados entre si</span>
+        <label class="switch"
+          ><input type="checkbox" id="noDup" checked /><span
+            class="slider"
+          ></span
+        ></label>
+      </div>
+
+      <button class="btn-primary" id="gerar">Gerar jogos</button>
+
+      <div class="warn">
+        <b>Lembrete:</b> loteria é jogo de azar puro. Nenhum algoritmo, fórmula
+        ou histórico consegue prever ou aumentar a probabilidade de um sorteio
+        futuro. Jogue com responsabilidade e apenas o que pode perder.
+      </div>
+    </div>
+
+    <div id="freqBox" class="card" style="display: none">
+      <strong style="font-size: 0.85rem">Frequência no histórico colado</strong>
+      <div class="freq-list" id="freqList"></div>
+    </div>
+
+    <div id="copyAllBar" class="batch-actions" style="display: none">
+      <button class="btn-secondary" id="copyAllBtn">
+        Copiar todos os jogos
+      </button>
+      <button
+        class="btn-secondary"
+        id="shareAllBtn"
+        title="Compartilhar jogos"
+        aria-label="Compartilhar jogos"
+      >
+        ↗
+      </button>
+    </div>
+    <div id="resultados"></div>
+
+    <section id="gameHistorySection" class="card">
+      <div class="section-header">
+        <div>
+          <strong style="font-size: 0.72rem; color: var(--muted)"
+            >REGISTRO PERSISTENTE</strong
+          >
+          <h2>Histórico de jogos</h2>
+        </div>
+        <button
+          id="clearGameHistory"
+          class="btn-secondary small-btn"
+          type="button"
+        >
+          Limpar
+        </button>
+      </div>
+      <p class="sub" style="margin: 8px 0 0">
+        O score mede aderência aos critérios escolhidos; não prevê sorteios nem
+        representa chance de premiação.
+      </p>
+      <div id="gameHistorySummary" class="history-summary"></div>
+      <div class="row">
+        <div>
+          <label for="historyGameFilter">Modalidade</label>
+          <select id="historyGameFilter">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div>
+          <label for="historyStatusFilter">Status</label>
+          <select id="historyStatusFilter">
+            <option value="">Todos</option>
+            <option value="study">Para estudo</option>
+            <option value="bet">Aposta feita</option>
+            <option value="draft">Rascunho</option>
+          </select>
+        </div>
+      </div>
+      <div id="gameHistoryList"></div>
+    </section>
+
+    <script>
+      const GAMES = {
+        megasena: {
+          label: "Mega-Sena (6 a 15 de 1–60)",
+          range: 60,
+          def: 6,
+          min: 6,
+          max: 15,
+        },
+        lotofacil: {
+          label: "Lotofácil (15 a 20 de 1–25)",
+          range: 25,
+          def: 15,
+          min: 15,
+          max: 20,
+        },
+        quina: {
+          label: "Quina (5 a 15 de 1–80)",
+          range: 80,
+          def: 5,
+          min: 5,
+          max: 15,
+        },
+        lotomania: {
+          label: "Lotomania (50 de 1–100)",
+          range: 100,
+          def: 50,
+          min: 50,
+          max: 50,
+        },
+        duplasena: {
+          label: "Dupla-Sena (6 a 15 de 1–50)",
+          range: 50,
+          def: 6,
+          min: 6,
+          max: 15,
+        },
+        timemania: {
+          label: "Timemania (10 de 1–80)",
+          range: 80,
+          def: 10,
+          min: 10,
+          max: 10,
+        },
+        diadesorte: {
+          label: "Dia de Sorte (7 a 15 de 1–31)",
+          range: 31,
+          def: 7,
+          min: 7,
+          max: 15,
+        },
+        supersete: {
+          label: "Super Sete (1 de 0–9, 7 colunas)",
+          range: 9,
+          def: 7,
+          min: 7,
+          max: 7,
+        },
+      };
+
+      const gameSel = document.getElementById("game");
+      const dezInput = document.getElementById("dezenas");
+      const themeInput = document.getElementById("theme");
+      const settingsKey = "jogos-loteria-config";
+      const pastedResultsKey = "jogos-loteria-resultados";
+      const generatedGamesKey = "jogos-loteria-historico-jogos";
+      const CAIXA_URLS = {
+        megasena: "https://loterias.caixa.gov.br/Paginas/Mega-Sena.aspx",
+        lotofacil: "https://loterias.caixa.gov.br/Paginas/Lotofacil.aspx",
+        quina: "https://loterias.caixa.gov.br/Paginas/Quina.aspx",
+        lotomania: "https://loterias.caixa.gov.br/Paginas/Lotomania.aspx",
+        duplasena: "https://loterias.caixa.gov.br/Paginas/Dupla-Sena.aspx",
+        timemania: "https://loterias.caixa.gov.br/Paginas/Timemania.aspx",
+        diadesorte: "https://loterias.caixa.gov.br/Paginas/Dia-de-Sorte.aspx",
+        supersete: "https://loterias.caixa.gov.br/Paginas/Super-Sete.aspx",
+      };
+      Object.entries(GAMES).forEach(([key, g]) => {
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = g.label;
+        gameSel.appendChild(opt);
+      });
+
+      function syncDezenas() {
+        const g = GAMES[gameSel.value];
+        dezInput.min = g.min;
+        dezInput.max = g.max;
+        dezInput.value = g.def;
+      }
+      gameSel.addEventListener("change", syncDezenas);
+      function applyTheme(theme) {
+        if (theme === "auto") {
+          document.documentElement.removeAttribute("data-theme");
+        } else {
+          document.documentElement.dataset.theme = theme;
+        }
+        document.querySelector('meta[name="theme-color"]').content =
+          theme === "light" ? "#f4f5f7" : "#0f1115";
+      }
+      function saveSettings() {
+        try {
+          localStorage.setItem(
+            settingsKey,
+            JSON.stringify({
+              game: gameSel.value,
+              theme: themeInput.value,
+              qtd: document.getElementById("qtdJogos").value,
+              strategy: document.getElementById("strategy").value,
+              historyWindow: document.getElementById("historyWindow").value,
+              useFreq: document.getElementById("useFreq").checked,
+              balance: document.getElementById("balance").checked,
+              noDup: document.getElementById("noDup").checked,
+            }),
+          );
+        } catch (err) {
+          console.warn("Não foi possível salvar as preferências:", err);
+        }
+      }
+      function loadSettings() {
+        try {
+          const settings = JSON.parse(localStorage.getItem(settingsKey));
+          if (!settings || !GAMES[settings.game]) return;
+          gameSel.value = settings.game;
+          themeInput.value = ["auto", "light", "dark"].includes(settings.theme)
+            ? settings.theme
+            : "auto";
+          applyTheme(themeInput.value);
+          document.getElementById("qtdJogos").value = settings.qtd || 5;
+          document.getElementById("strategy").value =
+            settings.strategy || "balanced";
+          document.getElementById("historyWindow").value =
+            settings.historyWindow || "100";
+          ["useFreq", "balance", "noDup"].forEach((id) => {
+            if (typeof settings[id] === "boolean")
+              document.getElementById(id).checked = settings[id];
+          });
+        } catch (err) {
+          console.warn("Não foi possível restaurar as preferências:", err);
+        }
+      }
+      function savePastedResults() {
+        try {
+          localStorage.setItem(
+            pastedResultsKey,
+            document.getElementById("historico").value,
+          );
+        } catch (err) {
+          console.warn("Não foi possível salvar os resultados:", err);
+        }
+      }
+      function loadPastedResults() {
+        try {
+          document.getElementById("historico").value =
+            localStorage.getItem(pastedResultsKey) || "";
+        } catch (err) {
+          console.warn("Não foi possível restaurar os resultados:", err);
+        }
+      }
+      loadPastedResults();
+      loadSettings();
+      applyTheme(themeInput.value);
+      syncDezenas();
+      [
+        "game",
+        "theme",
+        "qtdJogos",
+        "strategy",
+        "historyWindow",
+        "useFreq",
+        "balance",
+        "noDup",
+      ].forEach((id) => {
+        document.getElementById(id).addEventListener("change", saveSettings);
+      });
+      themeInput.addEventListener("change", () => applyTheme(themeInput.value));
+      document
+        .getElementById("historico")
+        .addEventListener("input", savePastedResults);
+
+      function formatNumbers(numbers) {
+        return numbers
+          .map((number) => String(number).padStart(2, "0"))
+          .join(" ");
+      }
+
+      function parseOfficialResult(raw) {
+        return [...new Set((raw.match(/\d+/g) || []).map(Number))].sort(
+          (a, b) => a - b,
+        );
+      }
+
+      document.getElementById("openCaixa").addEventListener("click", () => {
+        window.open(CAIXA_URLS[gameSel.value], "_blank", "noopener");
+      });
+
+      document.getElementById("updateResults").addEventListener("click", () => {
+        const cfg = GAMES[gameSel.value];
+        const result = parseOfficialResult(
+          document.getElementById("officialResult").value,
+        );
+        const updateStatus = document.getElementById("updateStatus");
+        if (
+          result.length !== cfg.def ||
+          result.some((number) => number < 1 || number > cfg.range)
+        ) {
+          updateStatus.textContent = `Informe exatamente ${cfg.def} dezenas válidas da ${cfg.label.split(" (")[0]}.`;
+          return;
+        }
+        const historyInput = document.getElementById("historico");
+        const line = formatNumbers(result);
+        const existing = parseHistorico().some(
+          (draw) =>
+            gameKey([...draw].sort((a, b) => a - b)) === gameKey(result),
+        );
+        if (!existing)
+          historyInput.value = historyInput.value.trim()
+            ? `${historyInput.value.trim()}\n${line}`
+            : line;
+        savePastedResults();
+        const checked = checkRecordedBets(gameSel.value, result);
+        document.getElementById("officialResult").value = "";
+        updateStatus.textContent = existing
+          ? `Resultado já estava no histórico. ${checked} aposta(s) foi(ram) conferida(s).`
+          : `Resultado adicionado ao histórico. ${checked} aposta(s) foi(ram) conferida(s).`;
+        generateGames(false);
+      });
+
+      function parseHistorico() {
+        const raw = document.getElementById("historico").value.trim();
+        if (!raw) return [];
+        return raw
+          .split("\n")
+          .map((line) => {
+            const nums = line
+              .split(/[\s,;]+/)
+              .map((n) => parseInt(n, 10))
+              .filter((n) => !isNaN(n));
+            return nums;
+          })
+          .filter((arr) => arr.length > 0);
+      }
+
+      function computeFreq(historico, range) {
+        const freq = {};
+        for (let i = 1; i <= range; i++) freq[i] = 0;
+        historico.forEach((draw) =>
+          draw.forEach((n) => {
+            if (freq[n] !== undefined) freq[n]++;
+          }),
+        );
+        return freq;
+      }
+
+      function selectHistoryWindow(historico) {
+        const windowSize = document.getElementById("historyWindow").value;
+        return windowSize === "all"
+          ? historico
+          : historico.slice(-Number(windowSize));
+      }
+
+      function weightedSample(pool, weights, k) {
+        const chosen = new Set();
+        const items = pool.map((v, i) => ({ v, w: weights[i] + 0.5 })); // suaviza pesos zero
+        while (chosen.size < k) {
+          const total = items.reduce(
+            (s, it) => (chosen.has(it.v) ? s : s + it.w),
+            0,
+          );
+          let r = Math.random() * total;
+          for (const it of items) {
+            if (chosen.has(it.v)) continue;
+            r -= it.w;
+            if (r <= 0) {
+              chosen.add(it.v);
+              break;
+            }
+          }
+          if (chosen.size < k && total <= 0) {
+            // fallback aleatório puro
+            const remaining = pool.filter((v) => !chosen.has(v));
+            chosen.add(remaining[Math.floor(Math.random() * remaining.length)]);
+          }
+        }
+        return Array.from(chosen);
+      }
+
+      function pureRandom(pool, k) {
+        const arr = [...pool];
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr.slice(0, k).sort((a, b) => a - b);
+      }
+
+      function oddEvenOk(nums) {
+        const odd = nums.filter((n) => n % 2 !== 0).length;
+        const ratio = odd / nums.length;
+        return ratio >= 0.35 && ratio <= 0.65;
+      }
+
+      function sumOk(nums, range) {
+        const average = nums.reduce((sum, n) => sum + n, 0) / nums.length;
+        return average >= range * 0.4 && average <= range * 0.6;
+      }
+
+      function generateGame(range, k, freq, useFreq, balance) {
+        const pool = Array.from({ length: range }, (_, i) => i + 1);
+        let attempts = 0;
+        let game;
+        do {
+          if (useFreq) {
+            const weights = pool.map((n) => freq[n] || 0);
+            game = weightedSample(pool, weights, k).sort((a, b) => a - b);
+          } else {
+            game = pureRandom(pool, k);
+          }
+          attempts++;
+        } while (
+          balance &&
+          (!oddEvenOk(game) || !sumOk(game, range)) &&
+          attempts < 40
+        );
+        return game;
+      }
+
+      function gameKey(g) {
+        return g.join("-");
+      }
+
+      function relativeScore(game, range, freq, balance) {
+        const maxFreq = Math.max(1, ...Object.values(freq));
+        const frequencyScore =
+          game.reduce((sum, number) => sum + (freq[number] || 0) / maxFreq, 0) /
+          game.length;
+        const criteriaScore =
+          (oddEvenOk(game) ? 25 : 0) + (sumOk(game, range) ? 25 : 0);
+        const historyScore = Object.values(freq).some(Boolean)
+          ? frequencyScore * 50
+          : 25;
+        return Math.round(criteriaScore + historyScore + (balance ? 0 : 10));
+      }
+
+      function generateGames(saveToHistory = true) {
+        const gameType = gameSel.value;
+        const cfg = GAMES[gameType];
+        const k = Math.max(
+          cfg.min,
+          Math.min(cfg.max, parseInt(dezInput.value, 10) || cfg.def),
+        );
+        const qtd = Math.max(
+          1,
+          Math.min(
+            20,
+            parseInt(document.getElementById("qtdJogos").value, 10) || 5,
+          ),
+        );
+        const historicoCompleto = parseHistorico();
+        const strategy = document.getElementById("strategy").value;
+        const historico =
+          strategy === "frequency"
+            ? historicoCompleto
+            : selectHistoryWindow(historicoCompleto);
+        const useFreq =
+          document.getElementById("useFreq").checked &&
+          historico.length > 0 &&
+          strategy !== "balanced";
+        const balance = document.getElementById("balance").checked;
+        const noDup = document.getElementById("noDup").checked;
+        saveSettings();
+
+        const status = document.getElementById("status");
+        status.textContent =
+          historico.length > 0
+            ? `${historico.length} de ${historicoCompleto.length} sorteio(s) considerados na análise.`
+            : document.getElementById("useFreq").checked
+              ? "Nenhum histórico colado — gerando de forma totalmente aleatória."
+              : "";
+
+        const freq = computeFreq(historico, cfg.range);
+        const freqBox = document.getElementById("freqBox");
+        const freqList = document.getElementById("freqList");
+        if (historico.length > 0) {
+          freqBox.style.display = "block";
+          const sorted = Object.entries(freq)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10);
+          freqList.innerHTML = sorted
+            .map(
+              ([n, c]) =>
+                `<span class="freq-item">${n.padStart(2, "0")}: <b>${c}x</b></span>`,
+            )
+            .join("");
+        } else {
+          freqBox.style.display = "none";
+        }
+
+        const seen = new Set();
+        const games = [];
+        let guard = 0;
+        while (games.length < qtd && guard < qtd * 50) {
+          guard++;
+          const g = generateGame(cfg.range, k, freq, useFreq, balance);
+          const key = gameKey(g);
+          if (noDup && seen.has(key)) continue;
+          if (
+            strategy === "diverse" &&
+            games.some(
+              (existing) =>
+                existing.filter((number) => g.includes(number)).length >
+                Math.ceil(k * 0.55),
+            )
+          )
+            continue;
+          seen.add(key);
+          games.push(g);
+        }
+
+        if (games.length < qtd) {
+          status.textContent += ` Foram gerados ${games.length} de ${qtd} jogos sem repetição.`;
+        }
+
+        const maxFreq = Math.max(1, ...Object.values(freq));
+        const container = document.getElementById("resultados");
+        container.innerHTML = "";
+        games.forEach((g, idx) => {
+          const div = document.createElement("div");
+          div.className = "card";
+          const sum = g.reduce((a, b) => a + b, 0);
+          const odd = g.filter((n) => n % 2 !== 0).length;
+          const score = relativeScore(g, cfg.range, freq, balance);
+          const ballsHtml = g
+            .map((n) => {
+              const isHot = useFreq && freq[n] >= maxFreq * 0.6;
+              return `<div class="ball ${isHot ? "hot" : ""}">${String(n).padStart(2, "0")}</div>`;
+            })
+            .join("");
+          div.innerHTML = `
+      <div class="game" style="margin-bottom:0;">
+        <div>
+          <div class="balls">${ballsHtml}</div>
+          <div class="meta">Jogo ${idx + 1} · soma ${sum} · ${odd} ímpares / ${g.length - odd} pares · <span class="score">score ${score}/100</span></div>
+        </div>
+        <button class="copy-btn" data-nums="${g.map((n) => String(n).padStart(2, "0")).join(" - ")}">Copiar</button>
+      </div>`;
+          container.appendChild(div);
+        });
+
+        container.querySelectorAll(".copy-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const text = btn.getAttribute("data-nums");
+            copyText(text)
+              .then(() => {
+                const old = btn.textContent;
+                btn.textContent = "Copiado!";
+                setTimeout(() => (btn.textContent = old), 1200);
+              })
+              .catch(() => {});
+          });
+        });
+
+        // guarda os jogos gerados para o botão "copiar todos"
+        lastGeneratedGames = games;
+        lastGameLabel = cfg.label.split(" (")[0];
+        const copyAllBar = document.getElementById("copyAllBar");
+        copyAllBar.style.display = games.length ? "block" : "none";
+        if (saveToHistory && games.length) {
+          saveGeneratedGames(games, {
+            gameType,
+            label: lastGameLabel,
+            strategy,
+            range: cfg.range,
+            freq,
+            balance,
+          });
+        }
+      }
+
+      document
+        .getElementById("gerar")
+        .addEventListener("click", () => generateGames());
+
+      let lastGeneratedGames = [];
+      let lastGameLabel = "";
+
+      function copyText(text) {
+        if (navigator.clipboard?.writeText && window.isSecureContext) {
+          return navigator.clipboard.writeText(text);
+        }
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand("copy");
+        textarea.remove();
+        return copied
+          ? Promise.resolve()
+          : Promise.reject(new Error("Cópia indisponível"));
+      }
+
+      function allGamesText() {
+        const linhas = lastGeneratedGames.map(
+          (g, i) =>
+            `Jogo ${i + 1}: ${g.map((n) => String(n).padStart(2, "0")).join(" - ")}`,
+        );
+        return `${lastGameLabel}\n${linhas.join("\n")}`;
+      }
+
+      function getGeneratedGamesHistory() {
+        try {
+          const entries = JSON.parse(localStorage.getItem(generatedGamesKey));
+          return Array.isArray(entries) ? entries : [];
+        } catch (err) {
+          console.warn("Não foi possível abrir o histórico de jogos:", err);
+          return [];
+        }
+      }
+
+      function saveGeneratedGames(games, context) {
+        const now = new Date().toISOString();
+        const newEntries = games.map((numbers, index) => ({
+          id: `${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`,
+          createdAt: now,
+          numbers,
+          gameType: context.gameType,
+          label: context.label,
+          strategy: context.strategy,
+          score: relativeScore(
+            numbers,
+            context.range,
+            context.freq,
+            context.balance,
+          ),
+          status: "study",
+        }));
+        try {
+          const entries = [...newEntries, ...getGeneratedGamesHistory()].slice(
+            0,
+            100,
+          );
+          localStorage.setItem(generatedGamesKey, JSON.stringify(entries));
+          renderGameHistory();
+        } catch (err) {
+          console.warn("Não foi possível salvar o histórico de jogos:", err);
+        }
+      }
+
+      function statusLabel(status) {
+        return (
+          { study: "Para estudo", bet: "Aposta feita", draft: "Rascunho" }[
+            status
+          ] || "Para estudo"
+        );
+      }
+
+      function renderGameHistory() {
+        const entries = getGeneratedGamesHistory();
+        const gameFilter = document.getElementById("historyGameFilter");
+        const statusFilter = document.getElementById("historyStatusFilter");
+        const selectedGame = gameFilter.value;
+        const types = [
+          ...new Map(
+            entries.map((entry) => [entry.gameType, entry.label]),
+          ).entries(),
+        ];
+        gameFilter.innerHTML = `<option value="">Todas</option>${types.map(([type, label]) => `<option value="${type}">${label}</option>`).join("")}`;
+        gameFilter.value = types.some(([type]) => type === selectedGame)
+          ? selectedGame
+          : "";
+
+        const filtered = entries.filter(
+          (entry) =>
+            (!gameFilter.value || entry.gameType === gameFilter.value) &&
+            (!statusFilter.value || entry.status === statusFilter.value),
+        );
+        const studyCount = entries.filter(
+          (entry) => entry.status === "study",
+        ).length;
+        const betCount = entries.filter(
+          (entry) => entry.status === "bet",
+        ).length;
+        const averageScore = entries.length
+          ? Math.round(
+              entries.reduce((sum, entry) => sum + entry.score, 0) /
+                entries.length,
+            )
+          : 0;
+        const checkedEntries = entries.filter((entry) =>
+          Number.isInteger(entry.hits),
+        );
+        const bestHits = checkedEntries.length
+          ? Math.max(...checkedEntries.map((entry) => entry.hits))
+          : "—";
+        document.getElementById("gameHistorySummary").innerHTML = `
+          <div>Jogos registrados<b>${entries.length}</b></div>
+          <div>Apostas feitas<b>${betCount}</b></div>
+          <div>Melhor conferência<b>${bestHits}${bestHits === "—" ? "" : " acertos"}</b></div>`;
+        const list = document.getElementById("gameHistoryList");
+        if (!filtered.length) {
+          list.innerHTML =
+            '<p class="empty-history">Nenhum jogo registrado para estes filtros.</p>';
+          return;
+        }
+        list.innerHTML = filtered
+          .map(
+            (entry) => `
+          <article class="history-item">
+            <div class="history-item-head">
+              <div><strong>${entry.label}</strong><div class="meta">${new Date(entry.createdAt).toLocaleString("pt-BR")} · ${entry.strategy}</div></div>
+              <span class="score">${entry.score}/100</span>
+            </div>
+            <div class="balls">${entry.numbers.map((number) => `<div class="ball">${String(number).padStart(2, "0")}</div>`).join("")}</div>
+            ${Number.isInteger(entry.hits) ? `<div class="meta"><span class="score">${entry.hits} acertos</span> no último resultado oficial conferido</div>` : ""}
+            <div class="history-actions">
+              <select data-status-id="${entry.id}" aria-label="Status do jogo">
+                ${["draft", "study", "bet"].map((status) => `<option value="${status}" ${entry.status === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}
+              </select>
+              <button class="btn-secondary small-btn" type="button" data-use-id="${entry.id}">Usar</button>
+              <button class="btn-secondary small-btn" type="button" data-delete-id="${entry.id}" aria-label="Excluir jogo">×</button>
+            </div>
+          </article>`,
+          )
+          .join("");
+        list.querySelectorAll("[data-status-id]").forEach((select) =>
+          select.addEventListener("change", () =>
+            updateGameHistory(select.dataset.statusId, {
+              status: select.value,
+            }),
+          ),
+        );
+        list
+          .querySelectorAll("[data-delete-id]")
+          .forEach((button) =>
+            button.addEventListener("click", () =>
+              deleteGameHistory(button.dataset.deleteId),
+            ),
+          );
+        list
+          .querySelectorAll("[data-use-id]")
+          .forEach((button) =>
+            button.addEventListener("click", () =>
+              useHistoryGame(button.dataset.useId),
+            ),
+          );
+      }
+
+      function updateGameHistory(id, changes) {
+        const entries = getGeneratedGamesHistory().map((entry) =>
+          entry.id === id ? { ...entry, ...changes } : entry,
+        );
+        localStorage.setItem(generatedGamesKey, JSON.stringify(entries));
+        renderGameHistory();
+      }
+
+      function deleteGameHistory(id) {
+        localStorage.setItem(
+          generatedGamesKey,
+          JSON.stringify(
+            getGeneratedGamesHistory().filter((entry) => entry.id !== id),
+          ),
+        );
+        renderGameHistory();
+      }
+
+      function checkRecordedBets(gameType, result) {
+        let checked = 0;
+        const entries = getGeneratedGamesHistory().map((entry) => {
+          if (entry.gameType !== gameType || entry.status !== "bet")
+            return entry;
+          checked++;
+          return {
+            ...entry,
+            hits: entry.numbers.filter((number) => result.includes(number))
+              .length,
+            checkedAt: new Date().toISOString(),
+            checkedResult: result,
+          };
+        });
+        localStorage.setItem(generatedGamesKey, JSON.stringify(entries));
+        renderGameHistory();
+        return checked;
+      }
+
+      function useHistoryGame(id) {
+        const entry = getGeneratedGamesHistory().find((item) => item.id === id);
+        if (!entry || !GAMES[entry.gameType]) return;
+        gameSel.value = entry.gameType;
+        syncDezenas();
+        document.getElementById("qtdJogos").value = 1;
+        saveSettings();
+        document
+          .getElementById("gerar")
+          .scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      document
+        .getElementById("historyGameFilter")
+        .addEventListener("change", renderGameHistory);
+      document
+        .getElementById("historyStatusFilter")
+        .addEventListener("change", renderGameHistory);
+      document
+        .getElementById("clearGameHistory")
+        .addEventListener("click", () => {
+          localStorage.removeItem(generatedGamesKey);
+          renderGameHistory();
+        });
+
+      document.getElementById("copyAllBtn").addEventListener("click", () => {
+        if (!lastGeneratedGames.length) return;
+        const texto = allGamesText();
+        const btn = document.getElementById("copyAllBtn");
+        copyText(texto)
+          .then(() => {
+            const old = btn.textContent;
+            btn.textContent = "✅ Todos os jogos copiados!";
+            setTimeout(() => (btn.textContent = old), 1500);
+          })
+          .catch(() => {
+            btn.textContent = "⚠️ Não foi possível copiar";
+            setTimeout(
+              () => (btn.textContent = "📋 Copiar todos os jogos"),
+              1500,
+            );
+          });
+      });
+
+      document.getElementById("shareAllBtn").addEventListener("click", () => {
+        if (!lastGeneratedGames.length) return;
+        const texto = allGamesText();
+        if (navigator.share) {
+          navigator
+            .share({ title: lastGameLabel, text: texto })
+            .catch((err) => {
+              if (err.name !== "AbortError") copyText(texto);
+            });
+        } else {
+          copyText(texto);
+        }
+      });
+
+      renderGameHistory();
+      generateGames(false);
+
+      // --- Instalação como app (PWA) ---
+      const installBar = document.getElementById("installBar");
+      const installBtn = document.getElementById("installBtn");
+      const installMsg = document.getElementById("installMsg");
+      let deferredPrompt = null;
+
+      function isStandalone() {
+        return (
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.navigator.standalone === true
+        );
+      }
+      function isIOS() {
+        return /iphone|ipad|ipod/i.test(navigator.userAgent);
+      }
+
+      if (!isStandalone()) {
+        window.addEventListener("beforeinstallprompt", (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+          installBar.style.display = "flex";
+          installBtn.style.display = "inline-block";
+          installMsg.textContent = "📲 Instale este app na sua tela inicial.";
+        });
+
+        if (isIOS()) {
+          installBar.style.display = "flex";
+          installMsg.textContent =
+            '📲 No Safari, toque em Compartilhar → "Adicionar à Tela de Início" para instalar.';
+        }
+
+        installBtn.addEventListener("click", async () => {
+          if (!deferredPrompt) return;
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          installBar.style.display = "none";
+        });
+      }
+
+      // --- Service Worker (cache offline real) ---
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch((err) => {
+            console.warn("Falha ao registrar service worker:", err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

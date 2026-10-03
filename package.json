@@ -1,0 +1,9 @@
+{
+  "name": "gerador-loteria-pwa",
+  "version": "1.0.0",
+  "description": "PWA gerador de jogos para loterias da Caixa, com analise de frequencia historica.",
+  "private": true,
+  "scripts": {
+    "start": "npx serve . -l 5500"
+  }
+}
